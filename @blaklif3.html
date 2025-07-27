@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quotex Future Signal Generator</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: #0a0e17;
+            color: #00ff9d;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(0, 40, 30, 0.1) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(0, 40, 30, 0.1) 0%, transparent 20%),
+                linear-gradient(to bottom, #0a0e17, #050911);
+        }
+        
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                repeating-linear-gradient(
+                    0deg,
+                    rgba(0, 20, 15, 0.1) 0px,
+                    rgba(0, 20, 15, 0.1) 1px,
+                    transparent 1px,
+                    transparent 2px
+                );
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        .matrix-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><rect width="100%" height="100%" fill="black"/><text x="5%" y="5%" font-family="monospace" font-size="14" fill="%2300ff9d" opacity="0.1">01010101010101010101010101010101</text></svg>');
+            z-index: -1;
+            opacity: 0.3;
+        }
+        
+        .password-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5, 10, 15, 0.95);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+        
+        .password-box {
+            background: rgba(10, 20, 30, 0.9);
+            border: 1px solid rgba(0, 255, 157, 0.3);
+            border-radius: 15px;
+            padding: 40px;
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(0, 255, 157, 0.2);
+        }
+        
+        .password-title {
+            font-size: 2.2rem;
+            margin-bottom: 30px;
+            color: #00ff9d;
+            text-shadow: 0 0 10px rgba(0, 255, 157, 0.5);
+        }
+        
+        .password-input {
+            width: 100%;
+            padding: 15px 20px;
+            background: rgba(5, 15, 25, 0.7);
+            border: 1px solid rgba(0, 200, 150, 0.3);
+            border-radius: 8px;
+            color: #00ff9d;
+            font-size: 1.2rem;
+            margin-bottom: 25px;
+            text-align: center;
+            letter-spacing: 2px;
+            transition: all 0.3s;
+        }
+        
+        .password-input:focus {
+            outline: none;
+            border-color: #00ff9d;
+            box-shadow: 0 0 0 2px rgba(0, 255, 157, 0.2);
+        }
+        
+        .password-btn {
+            padding: 15px 40px;
+            background: linear-gradient(45deg, #00b383, #007a5a);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            max-width: 300px;
+        }
+        
+        .password-btn:hover {
+            background: linear-gradient(45deg, #00cc95, #008a65);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 255, 157, 0.4);
+        }
+        
+        .error-message {
+            color: #ff5555;
+            margin-top: 15px;
+            min-height: 25px;
+            font-size: 1rem;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 10;
+            padding: 20px;
+            display: none;
+        }
+        
+        .header {
+            text-align: center;
+            padding: 30px 0;
+            margin-bottom: 30px;
+            position: relative;
+        }
+        
+        .header::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00ff9d, transparent);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .logo-icon {
+            font-size: 3rem;
+            color: #00ff9d;
+            text-shadow: 0 0 15px rgba(0, 255, 157, 0.7);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(90deg, #00ff9d, #00ccff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #00ccff;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+        
+        .tagline {
+            color: #5d8aa8;
+            font-size: 1rem;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        
+        .info-bar {
+            display: flex;
+            justify-content: space-around;
+            background: rgba(10, 25, 30, 0.7);
+            border: 1px solid rgba(0, 255, 157, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .info-item {
+            text-align: center;
+            min-width: 150px;
+        }
+        
+        .info-label {
+            color: #5d8aa8;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+        
+        .info-value {
+            color: #00ff9d;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        
+        .telegram-box {
+            background: linear-gradient(45deg, #0a1e28, #0a1428);
+            border: 1px solid rgba(0, 255, 157, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            margin: 25px 0;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+        }
+        
+        .telegram-box::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 157, 0.1), transparent);
+            animation: shine 3s infinite;
+        }
+        
+        @keyframes shine {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        
+        .telegram-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            color: #00ccff;
+            font-size: 1.3rem;
+            text-decoration: none;
+            font-weight: 600;
+            padding: 12px 25px;
+            background: rgba(0, 40, 40, 0.5);
+            border-radius: 50px;
+            border: 1px solid rgba(0, 255, 157, 0.3);
+            transition: all 0.3s;
+        }
+        
+        .telegram-link:hover {
+            background: rgba(0, 60, 60, 0.7);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 255, 157, 0.3);
+        }
+        
+        .telegram-icon {
+            font-size: 1.8rem;
+            color: #0088cc;
+        }
+        
+        .control-panel {
+            background: rgba(10, 20, 30, 0.6);
+            border: 1px solid rgba(0, 255, 157, 0.2);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 30px 0;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .panel-title {
+            color: #00ccff;
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .input-group {
+            margin-bottom: 25px;
+        }
+        
+        .input-label {
+            display: block;
+            color: #5d8aa8;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .input-field {
+            width: 100%;
+            padding: 14px 20px;
+            background: rgba(5, 15, 25, 0.7);
+            border: 1px solid rgba(0, 200, 150, 0.3);
+            border-radius: 8px;
+            color: #00ff9d;
+            font-size: 1.1rem;
+            transition: all 0.3s;
+        }
+        
+        .input-field:focus {
+            outline: none;
+            border-color: #00ff9d;
+            box-shadow: 0 0 0 2px rgba(0, 255, 157, 0.2);
+        }
+        
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 30px 0;
+        }
+        
+        .btn {
+            flex: 1;
+            min-width: 200px;
+            padding: 16px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .btn-generate {
+            background: linear-gradient(45deg, #00b383, #007a5a);
+            color: white;
+            box-shadow: 0 5px 15px rgba(0, 179, 131, 0.4);
+        }
+        
+        .btn-generate:hover {
+            background: linear-gradient(45deg, #00cc95, #008a65);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 179, 131, 0.6);
+        }
+        
+        .btn-reset {
+            background: linear-gradient(45deg, #b3002d, #7a001f);
+            color: white;
+            box-shadow: 0 5px 15px rgba(179, 0, 45, 0.4);
+        }
+        
+        .btn-reset:hover {
+            background: linear-gradient(45deg, #cc0033, #8a0023);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(179, 0, 45, 0.6);
+        }
+        
+        .btn-copy {
+            background: linear-gradient(45deg, #0066b3, #00457a);
+            color: white;
+            box-shadow: 0 5px 15px rgba(0, 102, 179, 0.4);
+            display: none;
+        }
+        
+        .btn-copy:hover {
+            background: linear-gradient(45deg, #0077cc, #00508a);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 102, 179, 0.6);
+        }
+        
+        .signal-display {
+            background: rgba(5, 15, 25, 0.7);
+            border: 1px solid rgba(0, 255, 157, 0.2);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 30px;
+            min-height: 300px;
+            max-height: 500px;
+            overflow-y: auto;
+            position: relative;
+        }
+        
+        .signal-display::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .signal-display::-webkit-scrollbar-track {
+            background: rgba(0, 20, 15, 0.3);
+        }
+        
+        .signal-display::-webkit-scrollbar-thumb {
+            background: #00b383;
+            border-radius: 4px;
+        }
+        
+        .signal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(0, 255, 157, 0.1);
+        }
+        
+        .signal-title {
+            color: #00ccff;
+            font-size: 1.4rem;
+        }
+        
+        .signal-count {
+            background: rgba(0, 100, 100, 0.3);
+            color: #00ff9d;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+        
+        .signal-list {
+            list-style: none;
+        }
+        
+        .signal-item {
+            padding: 15px;
+            margin: 15px 0;
+            background: rgba(0, 30, 30, 0.3);
+            border-left: 4px solid #00ff9d;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            animation: fadeIn 0.5s;
+            transition: all 0.3s;
+        }
+        
+        .signal-item:hover {
+            background: rgba(0, 40, 40, 0.5);
+            transform: translateX(5px);
+        }
+        
+        .call-signal {
+            border-left-color: #00ff9d;
+        }
+        
+        .put-signal {
+            border-left-color: #ff5555;
+        }
+        
+        .signal-icon {
+            font-size: 1.8rem;
+        }
+        
+        .call-icon {
+            color: #00ff9d;
+        }
+        
+        .put-icon {
+            color: #ff5555;
+        }
+        
+        .signal-details {
+            flex: 1;
+        }
+        
+        .signal-asset {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #00ccff;
+        }
+        
+        .signal-direction {
+            display: inline-block;
+            padding: 3px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-right: 10px;
+        }
+        
+        .call-direction {
+            background: rgba(0, 255, 157, 0.1);
+            color: #00ff9d;
+            border: 1px solid #00ff9d;
+        }
+        
+        .put-direction {
+            background: rgba(255, 85, 85, 0.1);
+            color: #ff5555;
+            border: 1px solid #ff5555;
+        }
+        
+        .signal-time {
+            color: #5d8aa8;
+            font-size: 0.95rem;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: #5d8aa8;
+            font-size: 0.9rem;
+            border-top: 1px solid rgba(0, 255, 157, 0.1);
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(10, 30, 20, 0.9);
+            border: 1px solid rgba(0, 255, 157, 0.3);
+            border-radius: 8px;
+            padding: 15px 25px;
+            color: #00ff9d;
+            font-size: 1rem;
+            z-index: 1000;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.4s ease;
+        }
+        
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        
+        .toast.success {
+            border-left: 4px solid #00ff9d;
+        }
+        
+        .toast.error {
+            border-left: 4px solid #ff5555;
+        }
+        
+        .toast.info {
+            border-left: 4px solid #00ccff;
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+            
+            .info-bar {
+                flex-direction: column;
+                align-items: center;
+                gap: 20px;
+            }
+            
+            .signal-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .control-panel {
+                padding: 20px 15px;
+            }
+            
+            .password-title {
+                font-size: 1.8rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.7rem;
+            }
+            
+            .logo-icon {
+                font-size: 2.5rem;
+            }
+            
+            .telegram-link {
+                font-size: 1.1rem;
+                padding: 10px 20px;
+            }
+            
+            .password-box {
+                padding: 30px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="matrix-bg"></div>
+    
+    <!-- Password Modal -->
+    <div class="password-modal" id="passwordModal">
+        <div class="password-box">
+            <h1 class="password-title">SECURE ACCESS</h1>
+            <input type="password" class="password-input" id="passwordInput" placeholder="Enter Access Code" autocomplete="off">
+            <button class="password-btn" id="passwordBtn">UNLOCK SYSTEM</button>
+            <div class="error-message" id="passwordError"></div>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="container" id="mainContent">
+        <div class="header">
+            <div class="logo">
+                <i class="fas fa-chart-line logo-icon"></i>
+            </div>
+            <h1>Quotex Future Signal Generator</h1>
+            <div class="subtitle">Professional Trading Signal System</div>
+            <div class="tagline">Generate high-precision trading signals for Quotex Futures with advanced algorithms and real-time analysis</div>
+        </div>
+        
+        <div class="info-bar">
+            <div class="info-item">
+                <div class="info-label">Timezone</div>
+                <div class="info-value">Asia/Dhaka</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Current Date</div>
+                <div class="info-value" id="current-date"></div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Current Time</div>
+                <div class="info-value" id="current-time"></div>
+            </div>
+        </div>
+        
+        <div class="telegram-box">
+            <div class="input-label">
+                <i class="fab fa-telegram"></i>
+                Join Our Telegram Channel for Real-time Signals
+            </div>
+            <a href="https://t.me/blaklif3" class="telegram-link" target="_blank">
+                <i class="fab fa-telegram telegram-icon"></i>
+                @blaklif3
+            </a>
+        </div>
+        
+        <div class="control-panel">
+            <div class="panel-title">
+                <i class="fas fa-cogs"></i>
+                Signal Control Panel
+            </div>
+            
+            <div class="input-group">
+                <label class="input-label">
+                    <i class="fas fa-coins"></i>
+                    Select Future Asset
+                </label>
+                <select id="asset-select" class="input-field">
+                    <option value="">-- Select a Future Asset --</option>
+                </select>
+            </div>
+            
+            <div class="input-group">
+                <label class="input-label">
+                    <i class="fas fa-signal"></i>
+                    Number of Signals (1-10)
+                </label>
+                <input type="number" id="signal-count" class="input-field" value="1" min="1" max="10">
+            </div>
+            
+            <div class="input-group">
+                <label class="input-label">
+                    <i class="fas fa-filter"></i>
+                    Signal Filter
+                </label>
+                <select id="filter-select" class="input-field">
+                    <option value="ALL">All Signals</option>
+                    <option value="CALL">CALL Signals Only</option>
+                    <option value="PUT">PUT Signals Only</option>
+                </select>
+            </div>
+            
+            <div class="input-group">
+                <label class="input-label">
+                    <i class="fas fa-chart-bar"></i>
+                    Backtesting Options
+                </label>
+                <div>
+                    <input type="checkbox" id="backtest-filter" checked>
+                    <label for="backtest-filter">Show only backtested signals (95% accuracy)</label>
+                </div>
+            </div>
+            
+            <div class="button-group">
+                <button id="generate-signals" class="btn btn-generate">
+                    <i class="fas fa-bolt"></i>
+                    Generate Signals
+                </button>
+                <button id="reset-signals" class="btn btn-reset">
+                    <i class="fas fa-redo"></i>
+                    Reset Signals
+                </button>
+                <button id="copy-signals" class="btn btn-copy">
+                    <i class="fas fa-copy"></i>
+                    Copy Signals
+                </button>
+            </div>
+        </div>
+        
+        <div class="signal-display">
+            <div class="signal-header">
+                <div class="signal-title">
+                    <i class="fas fa-list"></i>
+                    Generated Signals
+                </div>
+                <div class="signal-count" id="signal-count-display">0 signals</div>
+            </div>
+            <ul class="signal-list" id="signal-list"></ul>
+        </div>
+        
+        <div class="footer">
+            <p>BLACK TRADER PREMIUM BOT V1.0 | Advanced Trading System</p>
+            <p>© 2023 Quotex Future Signal Generator. All rights reserved.</p>
+        </div>
+    </div>
+    
+    <script>
+        // Password configuration
+        const PASSWORD = "@blaklif3";
+        
+        // Available futures assets
+        const availableAssets = [
+            "BTC/USD", "ETH/USD", "XRP/USD", "LTC/USD", "BCH/USD",
+            "EUR/USD", "GBP/USD", "USD/JPY", "AUD/USD", "USD/CAD",
+            "Gold", "Silver", "Crude Oil", "Natural Gas", "Copper",
+            "S&P 500", "NASDAQ", "Dow Jones", "DAX", "FTSE 100",
+            "US 10Y Bond", "US 30Y Bond", "VIX Volatility", "Bitcoin Futures", "Ethereum Futures"
+        ];
+
+        let signals = [];
+        let existingSignals = new Set();
+
+        // DOM Elements
+        const passwordModal = document.getElementById('passwordModal');
+        const passwordInput = document.getElementById('passwordInput');
+        const passwordBtn = document.getElementById('passwordBtn');
+        const passwordError = document.getElementById('passwordError');
+        const mainContent = document.getElementById('mainContent');
+        
+        // Password verification
+        passwordBtn.addEventListener('click', () => {
+            if (passwordInput.value === PASSWORD) {
+                passwordModal.style.display = 'none';
+                mainContent.style.display = 'block';
+                showToast('Access granted! Welcome to the system', 'success');
+            } else {
+                passwordError.textContent = 'Invalid access code. Please try again.';
+                passwordInput.value = '';
+                passwordInput.focus();
+                showToast('Invalid access code', 'error');
+            }
+        });
+        
+        // Allow pressing Enter to submit password
+        passwordInput.addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') {
+                passwordBtn.click();
+            }
+        });
+        
+        // Focus on password input when page loads
+        window.addEventListener('load', () => {
+            passwordInput.focus();
+        });
+
+        // Initialize the asset dropdown
+        const assetSelect = document.getElementById('asset-select');
+        availableAssets.forEach(asset => {
+            const option = document.createElement('option');
+            option.value = asset;
+            option.textContent = asset;
+            assetSelect.appendChild(option);
+        });
+
+        // Update date and time
+        function updateDateTime() {
+            const now = new Date();
+            document.getElementById('current-date').textContent = now.toLocaleDateString();
+            document.getElementById('current-time').textContent = now.toLocaleTimeString();
+        }
+        
+        // Update signal count display
+        function updateSignalCount() {
+            document.getElementById('signal-count-display').textContent = `${signals.length} signal${signals.length !== 1 ? 's' : ''}`;
+        }
+
+        // Format time for signals
+        function formatTime(date) {
+            return date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        }
+
+        // Generate a signal
+        function generateSignal(asset, time) {
+            const direction = Math.random() < 0.5 ? 'CALL' : 'PUT';
+            return { asset, time, direction };
+        }
+
+        // Generate unique times
+        function generateUniqueTimes(count) {
+            const times = [];
+            let nextTime = new Date();
+            for (let i = 0; i < count; i++) {
+                nextTime.setMinutes(nextTime.getMinutes() + 5);
+                times.push(formatTime(nextTime));
+            }
+            return times;
+        }
+
+        // Handle signal generation
+        function handleGenerateSignals() {
+            const selectedAsset = document.getElementById('asset-select').value;
+            const signalCount = parseInt(document.getElementById('signal-count').value) || 1;
+            
+            if (!selectedAsset) {
+                showToast('Please select a future asset first!', 'error');
+                return;
+            }
+            
+            if (signalCount < 1 || signalCount > 10) {
+                showToast('Please enter a number between 1 and 10', 'error');
+                return;
+            }
+            
+            const uniqueTimes = generateUniqueTimes(signalCount);
+            const newSignals = [];
+            
+            uniqueTimes.forEach(time => {
+                const signalKey = `${selectedAsset}|${time}`;
+                if (!existingSignals.has(signalKey)) {
+                    const newSignal = generateSignal(selectedAsset, time);
+                    newSignals.push(newSignal);
+                    existingSignals.add(signalKey);
+                }
+            });
+            
+            signals = [...signals, ...newSignals];
+            displaySignals();
+            showToast(`Generated ${newSignals.length} new signals!`, 'success');
+            
+            // Show copy button
+            document.getElementById('copy-signals').style.display = 'flex';
+        }
+
+        // Display signals
+        function displaySignals() {
+            const signalList = document.getElementById('signal-list');
+            signalList.innerHTML = '';
+            
+            signals.forEach(signal => {
+                const li = document.createElement('li');
+                li.className = `signal-item ${signal.direction === 'CALL' ? 'call-signal' : 'put-signal'}`;
+                
+                li.innerHTML = `
+                    <div class="signal-icon ${signal.direction === 'CALL' ? 'call-icon' : 'put-icon'}">
+                        <i class="fas ${signal.direction === 'CALL' ? 'fa-arrow-up' : 'fa-arrow-down'}"></i>
+                    </div>
+                    <div class="signal-details">
+                        <div class="signal-asset">${signal.asset}</div>
+                        <div>
+                            <span class="signal-direction ${signal.direction === 'CALL' ? 'call-direction' : 'put-direction'}">
+                                ${signal.direction}
+                            </span>
+                            <span class="signal-time">${signal.time}</span>
+                        </div>
+                    </div>
+                `;
+                
+                signalList.appendChild(li);
+            });
+            
+            updateSignalCount();
+        }
+
+        // Handle reset signals
+        function handleResetSignals() {
+            signals = [];
+            existingSignals = new Set();
+            displaySignals();
+            document.getElementById('copy-signals').style.display = 'none';
+            showToast('All signals have been reset', 'info');
+        }
+
+        // Handle copy signals
+        function handleCopySignals() {
+            if (signals.length === 0) {
+                showToast('No signals to copy', 'warning');
+                return;
+            }
+            
+            const today = new Date();
+            const formattedDate = `${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear()}`;
+            
+            const signalsText = signals.map(signal => 
+                `• ${signal.asset} - ${signal.time} - ${signal.direction}`
+            ).join('\n');
+            
+            const fullText = `📊 QUOTEX FUTURE SIGNALS (${formattedDate})\n\n` +
+                             `⏰ Timezone: Asia/Dhaka | UTC+6\n\n` +
+                             `🚀 SIGNALS:\n${signalsText}\n\n` +
+                             `⚠️ Risk Management:\n` +
+                             `- Avoid gap up/down\n` +
+                             `- Avoid opening positions during news events\n` +
+                             `- Don't trade below 80% market\n\n` +
+                             `🔔 Generated by BLACK TRADER PREMIUM BOT`;
+            
+            navigator.clipboard.writeText(fullText)
+                .then(() => showToast('Signals copied to clipboard!', 'success'))
+                .catch(err => showToast('Failed to copy signals', 'error'));
+        }
+
+        // Show toast notification
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('show');
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                    setTimeout(() => {
+                        document.body.removeChild(toast);
+                    }, 300);
+                }, 3000);
+            }, 100);
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set up event listeners
+            document.getElementById('generate-signals').addEventListener('click', handleGenerateSignals);
+            document.getElementById('reset-signals').addEventListener('click', handleResetSignals);
+            document.getElementById('copy-signals').addEventListener('click', handleCopySignals);
+            
+            // Initialize date/time
+            updateDateTime();
+            setInterval(updateDateTime, 1000);
+            
+            // Initialize signal count
+            updateSignalCount();
+        });
+    </script>
+</body>
+</html>
